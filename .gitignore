@@ -1,0 +1,6 @@
+/builds
+/aplos
+/*.iml
+/.idea/
+dist/
+/coverage.*
