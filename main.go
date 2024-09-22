@@ -47,6 +47,7 @@ type Conf struct {
 	ReadHeaderTimeoutSec int
 }
 
+// nolint:cyclop
 func (c *Conf) Validate() error {
 	_, err := net.ResolveTCPAddr("tcp", c.Address)
 	if err != nil {
