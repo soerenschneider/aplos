@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/soerenschneider/aplos/compare/v1.0.2...v1.1.0) (2024-09-22)
+
+
+### Features
+
+* configurable timeouts ([c354d57](https://github.com/soerenschneider/aplos/commit/c354d57473a6e422e9789562e035efc3d88d3242))
+
+
+### Bug Fixes
+
+* **deps:** bump golang from 1.22.3 to 1.23.1 ([fececa6](https://github.com/soerenschneider/aplos/commit/fececa60fa29c463dfcc46e644da91a17317fe35))
+
 ## [1.0.2](https://github.com/soerenschneider/aplos/compare/v1.0.1...v1.0.2) (2024-06-03)
 
 
