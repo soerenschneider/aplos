@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -21,6 +22,11 @@ const (
 	defaultAddr                = "127.0.0.1:8080"
 	defaultDir                 = "/pub"
 	defaultHealthcheckEndpoint = "/_health"
+
+	defaultIdleTimeoutSec       = 120
+	defaultReadTimeoutSec       = 60
+	defaultWriteTimeoutSec      = 1800
+	defaultReadHeaderTimeoutSec = 30
 )
 
 var (
@@ -34,6 +40,11 @@ type Conf struct {
 	TlsCertFile         string
 	TlsKeyFile          string
 	HealthcheckEndpoint string
+
+	IdleTimeoutSec       int
+	ReadTimeoutSec       int
+	WriteTimeoutSec      int
+	ReadHeaderTimeoutSec int
 }
 
 func (c *Conf) Validate() error {
@@ -53,6 +64,10 @@ func (c *Conf) Validate() error {
 
 	if len(c.TlsCertFile) > 0 && len(c.TlsCertFile) == 0 || len(c.TlsCertFile) == 0 && len(c.TlsCertFile) > 0 {
 		return errors.New("either both tls cert and key must be provided or none at all")
+	}
+
+	if c.WriteTimeoutSec <= 0 || c.IdleTimeoutSec <= 0 || c.ReadTimeoutSec <= 0 || c.ReadHeaderTimeoutSec <= 0 {
+		return errors.New("timeout must be > 0")
 	}
 
 	return nil
@@ -90,6 +105,21 @@ func (c *Conf) loadCert(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return &certificate, err
 }
 
+func envOrDefaultInt(key string, defaultVal int) int {
+	val := os.Getenv(key)
+	if len(val) == 0 {
+		return defaultVal
+	}
+
+	converted, err := strconv.Atoi(val)
+	if err != nil {
+		slog.Warn("could not convert to string", "var", key, "val", val)
+		return defaultVal
+	}
+
+	return converted
+}
+
 func envOrDefault(key, defaultVal string) string {
 	val := os.Getenv(key)
 	if len(val) == 0 {
@@ -100,11 +130,15 @@ func envOrDefault(key, defaultVal string) string {
 
 func getConf() Conf {
 	conf := Conf{
-		Address:             envOrDefault("APLOS_ADDR", defaultAddr),
-		Directory:           envOrDefault("APLOS_DIRECTORY", defaultDir),
-		TlsCertFile:         envOrDefault("APLOS_TLS_CRT_FILE", ""),
-		TlsKeyFile:          envOrDefault("APLOS_TLS_KEY_FILE", ""),
-		HealthcheckEndpoint: envOrDefault("APLOS_HEALTHCHECK_ENDPOINT", defaultHealthcheckEndpoint),
+		Address:              envOrDefault("APLOS_ADDR", defaultAddr),
+		Directory:            envOrDefault("APLOS_DIRECTORY", defaultDir),
+		TlsCertFile:          envOrDefault("APLOS_TLS_CRT_FILE", ""),
+		TlsKeyFile:           envOrDefault("APLOS_TLS_KEY_FILE", ""),
+		HealthcheckEndpoint:  envOrDefault("APLOS_HEALTHCHECK_ENDPOINT", defaultHealthcheckEndpoint),
+		IdleTimeoutSec:       envOrDefaultInt("APLOS_TIMEOUT_IDLE", defaultIdleTimeoutSec),
+		ReadHeaderTimeoutSec: envOrDefaultInt("APLOS_TIMEOUT_READ_HEADER", defaultReadHeaderTimeoutSec),
+		ReadTimeoutSec:       envOrDefaultInt("APLOS_TIMEOUT_READ", defaultReadTimeoutSec),
+		WriteTimeoutSec:      envOrDefaultInt("APLOS_TIMEOUT_WRITE", defaultWriteTimeoutSec),
 	}
 
 	flag.StringVar(&conf.Address, "a", conf.Address, "The address to run the server on")
@@ -112,6 +146,10 @@ func getConf() Conf {
 	flag.StringVar(&conf.TlsCertFile, "c", conf.TlsCertFile, "File that contains the TLS certificate")
 	flag.StringVar(&conf.TlsKeyFile, "k", conf.TlsCertFile, "File that contains the TLS private key")
 	flag.StringVar(&conf.HealthcheckEndpoint, "p", conf.HealthcheckEndpoint, "Endpoint where to expose the healthcheck handler. Set to \"\" to disable the health check handler.")
+	flag.IntVar(&conf.IdleTimeoutSec, "idle-timeout", conf.IdleTimeoutSec, "Set the idle timeout in seconds")
+	flag.IntVar(&conf.ReadHeaderTimeoutSec, "read-header-timeout", conf.ReadHeaderTimeoutSec, "Set the read-header timeout in seconds")
+	flag.IntVar(&conf.ReadTimeoutSec, "read-timeout", conf.ReadTimeoutSec, "Set the read timeout in seconds")
+	flag.IntVar(&conf.WriteTimeoutSec, "write-timeout", conf.WriteTimeoutSec, "Set the write timeout in seconds")
 	flag.Parse()
 	return conf
 }
@@ -140,10 +178,10 @@ func main() {
 		Addr:              conf.Address,
 		Handler:           mux,
 		TLSConfig:         tlsConfig,
-		IdleTimeout:       2 * time.Minute,
-		ReadTimeout:       60 * time.Second,
-		WriteTimeout:      30 * time.Minute,
-		ReadHeaderTimeout: 30 * time.Second,
+		IdleTimeout:       time.Duration(conf.IdleTimeoutSec) * time.Second,
+		ReadTimeout:       time.Duration(conf.ReadTimeoutSec) * time.Second,
+		WriteTimeout:      time.Duration(conf.WriteTimeoutSec) * time.Second,
+		ReadHeaderTimeout: time.Duration(conf.ReadHeaderTimeoutSec) * time.Second,
 	}
 
 	go func() {
