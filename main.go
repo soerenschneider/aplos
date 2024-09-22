@@ -140,10 +140,10 @@ func main() {
 		Addr:              conf.Address,
 		Handler:           mux,
 		TLSConfig:         tlsConfig,
-		IdleTimeout:       30 * time.Second,
-		ReadTimeout:       3 * time.Second,
-		WriteTimeout:      3 * time.Second,
-		ReadHeaderTimeout: 3 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      30 * time.Minute,
+		ReadHeaderTimeout: 30 * time.Second,
 	}
 
 	go func() {
