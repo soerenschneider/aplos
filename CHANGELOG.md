@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/soerenschneider/aplos/compare/v1.1.0...v1.1.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** bump golang from 1.23.1 to 1.23.3 ([ea51ce5](https://github.com/soerenschneider/aplos/commit/ea51ce5a703a5738697d356e61c75be2583f412e))
+* **deps:** bump golang from 1.23.3 to 1.24.0 ([8ce15cc](https://github.com/soerenschneider/aplos/commit/8ce15cc9400a5df9903e57a87af9cfd46b78d463))
+
 ## [1.1.0](https://github.com/soerenschneider/aplos/compare/v1.0.2...v1.1.0) (2024-09-22)
 
 
